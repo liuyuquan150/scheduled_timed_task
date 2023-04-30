@@ -4,146 +4,67 @@
     import axios from "axios"
 
     const dialogVisible = ref<boolean>(false)
-const dialogTitle = ref<string>('')
+    const dialogTitle = ref<string>('')
 
-interface TimedTask {
-    executorName: string,
-    taskName: string,
-    taskParameters: string,
-    cronExpression: string,
-    taskStatus: number,
-    remark: string
-}
-
-const task = ref<TimedTask>({
-    executorName: '',
-    taskName: '',
-    taskParameters: '',
-    cronExpression: '',
-    taskStatus: 1,
-    remark: ''
-})
-
-let tasks = ref<Array<TimedTask>>([])
-
-/**
- * onMounted 相当于 Vue 2 的 mounted.
- */
-onMounted(() => {
-    searchAllTimedTasks()
-})
-
-/**
- * 显示 "添加任务" 视图.
- */
-const showAddTaskView = () => {
-    task.value = {
-        cronExpression: "", executorName: "", remark: "", taskName: "", taskParameters: "", taskStatus: 1
+    interface TimedTask {
+        executorName: string,
+        taskName: string,
+        taskParameters: string,
+        cronExpression: string,
+        taskStatus: number,
+        remark: string
     }
-    dialogTitle.value = '添加作业'
-    dialogVisible.value = true
-}
 
-/**
- * 显示 "修改任务" 视图.
- */
-const showUpdateTaskView = (taskData: TimedTask) => {
-    Object.assign(task.value, taskData);
-    dialogTitle.value = '修改作业'
-    dialogVisible.value = true
-}
+    const task = ref<TimedTask>({
+        executorName: '',
+        taskName: '',
+        taskParameters: '',
+        cronExpression: '',
+        taskStatus: 1,
+        remark: ''
+    })
 
-/**
- * 提交视图(添加/修改)中的定时任务数据.
- */
-const commitTimedTaskData = () => {
-    task.value["id"] ? updateTimedTask() : addTimedTask()
-}
+    let tasks = ref<Array<TimedTask>>([])
 
-/**
- * 添加定时任务.
- */
-const addTimedTask = () => {
-    axios.post('http://localhost:8079/api/v1/task', task.value).then(response => {
-        if (response.status === 200) {
-            const {success, message} = response.data
-            ElMessage({
-                type: success ? 'success' : 'error',
-                message,
-                showClose: true
-            })
-            dialogVisible.value = false;
-            searchAllTimedTasks();
+    /**
+     * onMounted 相当于 Vue 2 的 mounted.
+     */
+    onMounted(() => {
+        searchAllTimedTasks()
+    })
+
+    /**
+     * 显示 "添加任务" 视图.
+     */
+    const showAddTaskView = () => {
+        task.value = {
+            cronExpression: "", executorName: "", remark: "", taskName: "", taskParameters: "", taskStatus: 1
         }
-    });
-}
+        dialogTitle.value = '添加作业'
+        dialogVisible.value = true
+    }
 
-/**
- * 搜索所有定时任务.
- */
-const searchAllTimedTasks = () => {
-    axios.get('http://localhost:8079/api/v1/tasks').then(response => {
-        if (response.status === 200) {
-            const {success, code, data} = response.data
-            if (success && code === 200) {
-                tasks.value = data
-            }
-        }
-    });
-}
+    /**
+     * 显示 "修改任务" 视图.
+     */
+    const showUpdateTaskView = (taskData: TimedTask) => {
+        Object.assign(task.value, taskData);
+        dialogTitle.value = '修改作业'
+        dialogVisible.value = true
+    }
 
-/**
- * 修改定时任务信息.
- */
-const updateTimedTask = () => {
-    axios.put('http://localhost:8079/api/v1/task', task.value).then(response => {
-        if (response.status === 200) {
-            const {success, message} = response.data
-            ElMessage({
-                type: success ? 'success' : 'error',
-                message,
-                showClose: true
-            })
-            dialogVisible.value = false;
-            searchAllTimedTasks();
-        }
-    });
-}
+    /**
+     * 提交视图(添加/修改)中的定时任务数据.
+     */
+    const commitTimedTaskData = () => {
+        task.value["id"] ? updateTimedTask() : addTimedTask()
+    }
 
-/**
- * 运行或停止定时任务.
- *
- * @param taskData 被运行或停止的定时任务.
- */
-const runOrStopTimedTask = (taskData: TimedTask) => {
-    axios.put('http://localhost:8079/api/v1/task', taskData).then(response => {
-        if (response.status === 200) {
-            const {success, message} = response.data
-            ElMessage({
-                type: success ? 'success' : 'error',
-                message,
-                showClose: true
-            })
-        }
-    });
-}
-
-/**
- * 错误定时任务.
- *
- * @param taskData 被删除的定时任务.
- */
-const deleteTask = (taskData: TimedTask) => {
-    ElMessageBox.confirm(
-        `此操作将永久删除编号为[${taskData["id"]}]的任务, 是否继续?`,
-        'Warning',
-        {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning',
-        }
-    ).then(() => {
-        axios.delete(`http://localhost:8079/api/v1/task/${taskData["id"]}`).then(response => {
+    /**
+     * 添加定时任务.
+     */
+    const addTimedTask = () => {
+        axios.post('http://localhost:8079/api/v1/task', task.value).then(response => {
             if (response.status === 200) {
                 const {success, message} = response.data
                 ElMessage({
@@ -151,17 +72,96 @@ const deleteTask = (taskData: TimedTask) => {
                     message,
                     showClose: true
                 })
+                dialogVisible.value = false;
                 searchAllTimedTasks();
             }
+        });
+    }
+
+    /**
+     * 搜索所有定时任务.
+     */
+    const searchAllTimedTasks = () => {
+        axios.get('http://localhost:8079/api/v1/tasks').then(response => {
+            if (response.status === 200) {
+                const {success, code, data} = response.data
+                if (success && code === 200) {
+                    tasks.value = data
+                }
+            }
+        });
+    }
+
+    /**
+     * 修改定时任务信息.
+     */
+    const updateTimedTask = () => {
+        axios.put('http://localhost:8079/api/v1/task', task.value).then(response => {
+            if (response.status === 200) {
+                const {success, message} = response.data
+                ElMessage({
+                    type: success ? 'success' : 'error',
+                    message,
+                    showClose: true
+                })
+                dialogVisible.value = false;
+                searchAllTimedTasks();
+            }
+        });
+    }
+
+    /**
+     * 运行或停止定时任务.
+     *
+     * @param taskData 被运行或停止的定时任务.
+     */
+    const runOrStopTimedTask = (taskData: TimedTask) => {
+        axios.put('http://localhost:8079/api/v1/task', taskData).then(response => {
+            if (response.status === 200) {
+                const {success, message} = response.data
+                ElMessage({
+                    type: success ? 'success' : 'error',
+                    message,
+                    showClose: true
+                })
+            }
+        });
+    }
+
+    /**
+     * 错误定时任务.
+     *
+     * @param taskData 被删除的定时任务.
+     */
+    const deleteTask = (taskData: TimedTask) => {
+        ElMessageBox.confirm(
+            `此操作将永久删除编号为[${taskData["id"]}]的任务, 是否继续?`,
+            'Warning',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning',
+            }
+        ).then(() => {
+            axios.delete(`http://localhost:8079/api/v1/task/${taskData["id"]}`).then(response => {
+                if (response.status === 200) {
+                    const {success, message} = response.data
+                    ElMessage({
+                        type: success ? 'success' : 'error',
+                        message,
+                        showClose: true
+                    })
+                    searchAllTimedTasks();
+                }
+            })
+        }).catch(() => {
+            ElMessage({
+                type: 'success',
+                message: '操作取消成功!',
+                showClose: true
+            })
         })
-    }).catch(() => {
-        ElMessage({
-            type: 'success',
-            message: '操作取消成功!',
-            showClose: true
-        })
-    })
-}
+    }
 </script>
 
 <template>
