@@ -96,6 +96,7 @@ public class TimedTask
 	 *     定时任务首次创建时间.
 	 * </p>
 	 */
+	@Column(nullable = false)
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@CreatedDate
 	private LocalDateTime gmtCreate;
