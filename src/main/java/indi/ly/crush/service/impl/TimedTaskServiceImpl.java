@@ -9,6 +9,7 @@ import indi.ly.crush.repository.ITimedTaskRepository;
 import indi.ly.crush.service.ITimedTaskService;
 import indi.ly.crush.task.TimedTaskRunnable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 
@@ -21,36 +22,38 @@ import java.util.List;
 @Service
 public class TimedTaskServiceImpl
 		implements ITimedTaskService {
+	final TransactionTemplate transactionTemplate;
 	final TimedTaskManager timedTaskManager;
 	final ITimedTaskRepository timedTaskRepository;
 	
 	public TimedTaskServiceImpl(
+			TransactionTemplate transactionTemplate,
 			TimedTaskManager timedTaskManager,
 			ITimedTaskRepository timedTaskRepository
 	) {
+		this.transactionTemplate = transactionTemplate;
 		this.timedTaskManager = timedTaskManager;
 		this.timedTaskRepository = timedTaskRepository;
 	}
 	
 	@Override
 	public void addTimedTask(TimedTask timedTask) {
+		if (SpringApplicationContextHolder.notContainsBean(timedTask.getExecutorName())) {
+			throw new RuntimeException("Please add a valid timed task.");
+		}
+
 		boolean needAdd = this.timedTaskRepository.findAll()
 									.stream()
 									.noneMatch(task -> task.equals(timedTask));
-		
 		if (!needAdd) {
 			throw new RuntimeException("Timed tasks already exist, please do not add them again!");
 		}
-		
-		if (SpringApplicationContextHolder.containsBean(timedTask.getExecutorName())) {
-			TimedTask task = TimedTaskServiceImpl.this.timedTaskRepository.save(timedTask);
-			if (task.getTaskStatus() == TimedTaskStatusEnum.RUN) {
-				TimedTaskRunnable runnable = new TimedTaskRunnable(TaskBeanInformation.of(task));
-				TimedTaskServiceImpl.this.timedTaskManager.run(runnable, task.getCronExpression());
-			}
+
+		TimedTask task = TimedTaskServiceImpl.this.timedTaskRepository.save(timedTask);
+		if (task.getTaskStatus() == TimedTaskStatusEnum.RUN) {
+			TimedTaskRunnable runnable = new TimedTaskRunnable(TaskBeanInformation.of(task));
+			TimedTaskServiceImpl.this.timedTaskManager.run(runnable, task.getCronExpression());
 		}
-		
-		throw new RuntimeException("Please add a valid timed task.");
 	}
 	
 	@Override
@@ -77,7 +80,12 @@ public class TimedTaskServiceImpl
 			}
 			
 		} else {
-			// 如果将一个任务修改为另一个任务, 那么被修改前的任务是否已经在运行了呢? 如果是, 需要进行一个 STOP.
+			/*
+				如果将一个任务修改为另一个任务
+				(请注意, 也有可能是只改变这个 TimedTask Bean 的执行方法 taskName 或执行方法参数 taskParameters、抑或二者兼有),
+				那么被修改前的任务是否已经在运行了呢?
+				如果是, 需要进行一个 STOP.
+			 */
 			runnable = new TimedTaskRunnable(TaskBeanInformation.of(task));
 			if (task.getTaskStatus() == TimedTaskStatusEnum.RUN) {
 				this.timedTaskManager.stop(runnable);
@@ -85,7 +93,7 @@ public class TimedTaskServiceImpl
 			task = this.timedTaskRepository.saveAndFlush(timedTask);
 			runnable = new TimedTaskRunnable(TaskBeanInformation.of(task));
 		}
-		
+
 		// 被修改后, 该任务是否需要进行?
 		if (task.getTaskStatus() == TimedTaskStatusEnum.RUN) {
 			this.timedTaskManager.run(runnable, task.getCronExpression());
