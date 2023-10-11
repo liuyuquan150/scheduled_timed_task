@@ -30,4 +30,8 @@ public class SpringApplicationContextHolder
 	public static Boolean containsBean(String name) {
 		return SpringApplicationContextHolder.applicationContext.containsBean(name);
 	}
+
+	public static Boolean notContainsBean(String name) {
+		return !containsBean(name);
+	}
 }
